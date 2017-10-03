@@ -5,7 +5,8 @@
 # ignore any locally created box files
 *.box
 output-virtualbox-iso/
+output-qemu/
+output/
+packer_cache/
 # ignore test directories
 test/
-
-

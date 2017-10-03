@@ -1,102 +1,70 @@
 {
   "description": "Build base Alpine Linux x86_64",
-  "push": {
-    "name": "maier/alpine36",
-    "vcs": true
-  },
   "variables": {
-    "atlas_user": "{{env `ATLAS_USER_NAME`}}",
-    "atlas_token": "{{env `ATLAS_TOKEN`}}",
-    "atlas_box": "{{env `ATLAS_BOX_NAME`}}",
-    "disk_size": "10240",
+    "disk_size": "16384",
     "memory": "1024",
-    "cpus": "1"
+    "cpus": "1",
+	"rootpw": "changeme"
   },
   "provisioners": [
     {
       "type": "shell",
+      "expect_disconnect": true,
+      "environment_vars": [
+        "ROOTPW={{user `rootpw`}}"
+      ],
+      "script": "scripts/00install.sh"
+    }, {
+      "type": "shell",
+      "pause_before": "5s",
       "scripts": [
-        "scripts/00base.sh",
         "scripts/01alpine.sh",
         "scripts/01networking.sh",
         "scripts/02sshd.sh",
-        "scripts/03vagrant.sh",
-        "scripts/04sudoers.sh",
-        "scripts/90virtualbox.sh",
+        "scripts/03sudoers.sh",
+        "scripts/10docker.sh",
+        "scripts/20docker-cron.sh",
         "scripts/99minimize.sh"
-      ],
-      "override": {
-        "virtualbox-iso": {
-          "execute_command": "/bin/sh '{{.Path}}'"
-        }
-      }
+      ]
     }
   ],
   "builders": [
     {
-      "type": "virtualbox-iso",
-      "virtualbox_version_file": ".vbox_version",
+      "type": "qemu",
+      "vm_name": "docker-runner",
 
-      "guest_additions_mode": "disable",
-      "guest_os_type": "Linux26_64",
       "headless": false,
+      "format": "qcow2",
+      "disk_interface": "virtio",
       "disk_size": "{{user `disk_size`}}",
       "http_directory": "http",
 
-      "iso_urls": ["isos/alpine-standard-3.6.2-x86_64.iso",
-                   "http://dl-cdn.alpinelinux.org/alpine/v3.6/releases/x86_64/alpine-standard-3.6.2-x86_64.iso"],
-      "iso_checksum": "ddf8b91cc0d2b1c110f26607d410e5c951eedff9c60d6eb05d220b87c1970840",
+      "iso_urls": ["isos/alpine-virt-3.6.2-x86_64.iso",
+                   "http://dl-cdn.alpinelinux.org/alpine/v3.6/releases/x86_64/alpine-virt-3.6.2-x86_64.iso"],
+      "iso_checksum": "92c80e151143da155fb99611ed8f0f3672fba4de228a85eb5f53bcb261bf4b0a",
       "iso_checksum_type": "sha256",
 
-      "communicator": "ssh",
       "ssh_username": "root",
-      "ssh_password": "vagrant",
-      "ssh_wait_timeout": "10m",
+      "ssh_password": "{{user `rootpw`}}",
+      "ssh_wait_timeout": "5m",
       "shutdown_command": "/sbin/poweroff",
 
-      "boot_wait": "30s",
+      "boot_wait": "15s",
       "boot_command": [
         "root<enter><wait>",
-        "ifconfig eth0 up && udhcpc -i eth0<enter><wait10>",
-        "wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/answers<enter><wait>",
-        "setup-alpine -f answers<enter><wait5>",
-        "vagrant<enter><wait>",
-        "vagrant<enter><wait>",
-        "<wait10><wait10><wait10>",
-        "y<enter>",
-        "<wait10><wait10><wait10>",
-        "<wait10><wait10><wait10>",
-        "rc-service sshd stop<enter>",
-        "mount /dev/sda3 /mnt<enter>",
-        "echo 'PermitRootLogin yes' >> /mnt/etc/ssh/sshd_config<enter>",
-        "umount /mnt<enter>",
-        "reboot<enter>"
-      ],
-
-      "hard_drive_interface": "sata",
-      "vboxmanage": [
-        ["modifyvm", "{{.Name}}", "--memory", "{{user `memory`}}"],
-        ["modifyvm", "{{.Name}}", "--cpus", "{{user `cpus`}}"]
+        "echo root:{{user `rootpw`}} | chpasswd<enter>",
+        "ip link set eth0 up<enter>",
+        "udhcpc -i eth0<enter><wait3s>",
+        "apk --no-cache add openssh openssh-server<enter><wait5s>",
+        "echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config<enter>",
+        "service sshd start<enter>"
       ]
-
     }
   ],
   "post-processors": [
-    [{
-      "type": "vagrant",
-      "keep_input_artifact": false
-    },
     {
-      "type": "atlas",
-      "only": ["virtualbox-iso"],
-      "token": "{{user `atlas_token`}}",
-      "artifact": "{{user `atlas_user`}}/{{user `atlas_box`}}",
-      "artifact_type": "vagrant.box",
-      "metadata": {
-        "provider": "virtualbox",
-        "description": "[Alpine Linux](http://alpinelinux.org) v3.6.0",
-        "version": "1.0.0"
-      }
-    }]
+      "type": "compress",
+      "output": "output/alpine-3.6-x86_64.tar.gz"
+    }
   ]
 }
