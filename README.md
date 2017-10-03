@@ -1,35 +1,14 @@
-# [Alpine Linux](http://alpinelinux.org)
+# [Alpine Linux](http://alpinelinux.org) VM with Docker
 
-* minimal linux distro
-* good for Docker containers [gliderlabs/docker-alpine](https://github.com/gliderlabs/docker-alpine)
+* Minimal linux distro
+* Good for Docker containers [library/alpine](https://hub.docker.com/_/alpine)
 
-Build is for developing and testing what will be run in a container and building Dockerfiles.
+## Building
 
-* v3.6 `vagrant init maier/alpine-3.6-x86_64`
+You may find that the timings aren't long enough so increase the `<wait ..>` blocks in the `alpine-3.6-x86_64.json` file.
 
-## Usage notes
+If building on a server or in a non-X environment, set `headless: true` to prevent VNC window errors.
 
-Virtualbox Guest Additions do not build/install on v3.5 of Alpine.
-
-* Private network needs be configured as static in Vagrantfile in order to use
-  folder sharing. If it is set to DHCP, Virtualbox will not see the address
-  assigned to the interface, therefore, Vagrant will not be able to retrieve it
-  to configure NFS.
-* Folder sharing should be configured to use NFS in Vagrantfile.
-* `bash` is installed by default so `config.ssh.shell="/bin/sh"` is not necessary.
-* Vagrant plugin `vagrant-alpine` developed to support Alpine specific guest.
-   * `vagrant plugin install vagrant-alpine`.
-   * [Github repository](https://github.com/maier/vagrant-alpine/).
-   * Removed creation of fake `shutdown` command.
-   * Remove installation of `nfs-utils`.
-   * Remove starting `rpc.statd`.
-
-
-## Build environment
-
-```shell
-⁖ packer version && vagrant -v && vboxmanage --version
-Packer v1.0.0
-Vagrant 1.9.4
-5.1.22r115126
+```bash
+PACKER_KEY_INTERVAL=10ms packer-io build alpine-3.6-x86_64.json
 ```
