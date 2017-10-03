@@ -23,6 +23,7 @@
         "scripts/02sshd.sh",
         "scripts/03sudoers.sh",
         "scripts/10docker.sh",
+        "scripts/11docker-compose.sh",
         "scripts/20docker-cron.sh",
         "scripts/99minimize.sh"
       ]
